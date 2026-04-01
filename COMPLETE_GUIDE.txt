@@ -1,0 +1,255 @@
+
+╔══════════════════════════════════════════════════════════════╗
+║         SHOPFLOW — COMPLETE WORKING GUIDE                    ║
+║         Read once, follow exactly, no confusion              ║
+╚══════════════════════════════════════════════════════════════╝
+
+WHAT WERE THE BUGS IN YOUR PREVIOUS VERSION
+============================================
+1. docker-compose.yml was MERGED with Jenkinsfile (one file had both)
+2. frontend/index.html was NOT copied into src/main/resources/static/
+3. Jenkinsfile used ./mvnw but deployed without MySQL network
+4. Kubernetes had only one file — now split into mysql + app files  
+5. Render crashed because PORT variable not read and no cloud DB set
+6. HomeController returned JSON at / instead of serving HTML
+
+ALL ARE FIXED IN THIS VERSION.
+
+════════════════════════════════════════════════
+ PART 1: RUN LOCALLY (Docker Compose)
+════════════════════════════════════════════════
+
+Step 1: Build the JAR
+  cd shopflow
+  mvn clean package -DskipTests
+
+  You should see: BUILD SUCCESS
+
+Step 2: Start everything
+  docker compose up --build
+
+  This starts:
+    - shopflow-mysql (MySQL database on port 3307)
+    - shopflow-app   (Spring Boot app on port 9090)
+  
+  MySQL starts first. App waits for MySQL healthcheck.
+  First run takes ~3 minutes (downloads images).
+
+Step 3: Open your app
+  Backend:  http://localhost:9090
+  Frontend: http://localhost:9090   (same URL, serves HTML now)
+  Health:   http://localhost:9090/health
+  Products: http://localhost:9090/api/products
+
+Step 4: Stop
+  docker compose down
+
+NOTE: NEVER use "docker run" alone — always use "docker compose up"
+
+
+════════════════════════════════════════════════
+ PART 2: KUBERNETES (Minikube)
+════════════════════════════════════════════════
+
+Step 1: Start Minikube (if not already)
+  minikube start
+
+Step 2: Build Docker image and load into Minikube
+  docker build -t shopflow .
+  minikube image load shopflow
+
+  IMPORTANT: You MUST run "minikube image load shopflow"
+  Without this, Kubernetes cannot find your image.
+
+Step 3: Deploy MySQL first
+  kubectl apply -f k8s/mysql-deployment.yaml
+
+  Wait for MySQL pod to be ready:
+  kubectl get pods   (wait until mysql pod shows 1/1 Running)
+
+Step 4: Deploy the app
+  kubectl apply -f k8s/app-deployment.yaml
+
+Step 5: Check everything
+  kubectl get pods
+  kubectl get services
+
+  You should see:
+    mysql            1/1     Running
+    shopflow-app-xx  1/1     Running
+    shopflow-app-xx  1/1     Running   (2 replicas)
+
+Step 6: Open in browser
+  minikube service shopflow-service
+
+  OR open: http://localhost:30090
+
+Step 7: Delete everything (cleanup)
+  kubectl delete -f k8s/app-deployment.yaml
+  kubectl delete -f k8s/mysql-deployment.yaml
+
+
+════════════════════════════════════════════════
+ PART 3: JENKINS CI/CD PIPELINE
+════════════════════════════════════════════════
+
+Step 1: Start Jenkins (one-time setup)
+  docker run -d --name jenkins -p 8080:8080 -p 50000:50000 -v jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkins/jenkins:lts
+
+Step 2: Give Jenkins Docker access
+  docker exec -u 0 -it jenkins bash
+  apt update && apt install maven -y && chmod 666 /var/run/docker.sock && exit
+  docker restart jenkins
+
+Step 3: Get Jenkins password
+  docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+
+Step 4: Open Jenkins
+  http://localhost:8080
+  Paste password → Install suggested plugins → Create admin user
+
+Step 5: Create Pipeline
+  New Item → Name: shopflow-pipeline → Pipeline → OK
+  Pipeline section → Definition: Pipeline script
+  Paste the Jenkinsfile contents
+  Change GitHub URL to: https://github.com/Niharikasheety/shopflow.git
+  Save → Build Now
+
+Step 6: Watch stages turn GREEN
+  Clone → Build → Test → Docker Build → Deploy
+  All should be green.
+
+Step 7: Open your deployed app
+  http://localhost:9090
+
+
+════════════════════════════════════════════════
+ PART 4: DEPLOY TO RENDER (Live website link)
+════════════════════════════════════════════════
+
+First you need a free cloud database. Use Railway:
+
+--- Get Railway MySQL (5 minutes) ---
+
+1. Go to https://railway.app
+2. Login with GitHub
+3. New Project → Provision MySQL
+4. Click the MySQL service → Variables tab
+5. Copy these values:
+     MYSQLHOST      (e.g. monorail.proxy.rlwy.net)
+     MYSQLPORT      (e.g. 12345)
+     MYSQLDATABASE  (railway)
+     MYSQLUSER      (root)
+     MYSQLPASSWORD  (some long password)
+
+6. Build your connection URL:
+   jdbc:mysql://MYSQLHOST:MYSQLPORT/MYSQLDATABASE?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+
+--- Deploy on Render ---
+
+1. Push your code to GitHub:
+   git add .
+   git commit -m "final deployment"
+   git push
+
+2. Go to https://render.com → New → Web Service
+3. Connect your GitHub repository (Niharikasheety/shopflow)
+4. Language: Docker (auto-detected)
+5. Instance Type: Free
+6. Click "Advanced" → Add Environment Variables:
+
+   SPRING_DATASOURCE_URL     = jdbc:mysql://MYSQLHOST:MYSQLPORT/MYSQLDATABASE?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+   SPRING_DATASOURCE_USERNAME = root
+   SPRING_DATASOURCE_PASSWORD = (your Railway MySQL password)
+
+7. Click "Create Web Service"
+8. Wait 5-8 minutes for build
+9. Your app will be live at: https://shopflow-xxxx.onrender.com
+
+--- Why Render needs these env vars ---
+Render has no MySQL. Your app crashes at startup if it can't 
+reach a database. Railway gives you a free MySQL in the cloud.
+These 3 env vars tell your app where that MySQL is.
+
+
+════════════════════════════════════════════════
+ QUICK COMMAND REFERENCE
+════════════════════════════════════════════════
+
+Local (Docker Compose):
+  mvn clean package -DskipTests
+  docker compose up --build
+  → http://localhost:9090
+
+Kubernetes (Minikube):
+  docker build -t shopflow .
+  minikube image load shopflow
+  kubectl apply -f k8s/mysql-deployment.yaml
+  kubectl apply -f k8s/app-deployment.yaml
+  minikube service shopflow-service
+
+Jenkins:
+  docker run -d --name jenkins -p 8080:8080 -v jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkins/jenkins:lts
+  → http://localhost:8080
+
+Cloud (after Railway DB + Render env vars):
+  git push → Render auto-deploys
+
+
+════════════════════════════════════════════════
+ TROUBLESHOOTING
+════════════════════════════════════════════════
+
+"mysql: Name or service not known"
+→ You ran docker run. Use: docker compose up --build
+
+"port already allocated"
+→ docker rm -f shopflow-app && docker compose up --build
+
+"no running pod for service" (Kubernetes)
+→ Run: minikube image load shopflow
+  Then: kubectl delete -f k8s/ && kubectl apply -f k8s/
+
+"Exited with status 1" on Render
+→ You didn't set SPRING_DATASOURCE_URL env var in Render
+
+"Frontend shows JSON instead of website"
+→ This version is fixed. Rebuild image: docker build -t shopflow .
+
+"mvnw not found" in Jenkins
+→ Already fixed in Jenkinsfile. It uses ./mvnw (wrapper included)
+
+"Access denied for user root"  
+→ Password mismatch. Check SPRING_DATASOURCE_PASSWORD matches
+  ShopFlow@123 in docker-compose.yml
+
+
+════════════════════════════════════════════════
+ VIVA ANSWERS
+════════════════════════════════════════════════
+
+Q: Why did you use Docker Compose instead of docker run?
+A: docker run starts a single container. Our app needs two services —
+   Spring Boot and MySQL. Docker Compose starts both with a shared
+   network so they can communicate using service names (mysql://mysql:3306).
+
+Q: What is the init container in Kubernetes?
+A: The init container runs before the main app container and waits
+   until MySQL is ready (port 3306 is open). This prevents the app
+   from crashing because MySQL started too slowly.
+
+Q: Why did Render deployment fail earlier?
+A: Render has no database. The app tried to connect to MySQL at
+   startup and crashed. The fix was provisioning a cloud MySQL on
+   Railway and providing the connection URL as an environment variable.
+
+Q: What is a multi-stage Dockerfile?
+A: Stage 1 uses the Maven image to compile and package the app into
+   a JAR file. Stage 2 uses a smaller JRE image to run the JAR.
+   This keeps the final image small and secure.
+
+Q: What is NodePort in Kubernetes?
+A: NodePort is a Service type that exposes your application on a fixed
+   port (30090) on every node in the cluster, making it accessible
+   from outside the cluster.
+

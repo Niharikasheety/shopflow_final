@@ -1,0 +1,360 @@
+# ============================================================
+# SHOPFLOW - COMPLETE STEP-BY-STEP GUIDE
+# DevOps-Driven E-Commerce Application
+# ============================================================
+
+========================================
+ WHAT THIS PROJECT IS
+========================================
+ShopFlow is a full-stack e-commerce application with:
+- Beautiful dark-themed frontend (HTML/CSS/JS)
+- Spring Boot REST API backend
+- MySQL database
+- 6 pre-seeded products auto-loaded on first run
+- Full shopping cart, checkout, order tracking
+- Admin dashboard to manage products and orders
+- Complete DevOps pipeline: Git → Maven → JUnit → Docker → Jenkins
+
+========================================
+ PHASE 1: PREREQUISITES (Install Once)
+========================================
+Install these tools on your Windows laptop:
+
+1. Java 17 JDK
+   Download: https://adoptium.net/
+   After install, open CMD and check:
+     java -version    <-- should show version 17
+
+2. Maven
+   Download: https://maven.apache.org/download.cgi
+   Extract to C:\Program Files\Maven
+   Add to PATH: C:\Program Files\Maven\bin
+   Check: mvn -version
+
+3. MySQL Server 8
+   Download: https://dev.mysql.com/downloads/installer/
+   During install: set password = ShopFlow@123
+   (Or use any password, update application.properties)
+   Check: MySQL80 service is running in Windows Services
+
+4. Docker Desktop
+   Download: https://www.docker.com/products/docker-desktop/
+   Enable WSL2 during install
+   After install: docker --version should work
+
+5. Git
+   Download: https://git-scm.com/
+   Check: git --version
+
+6. VS Code (IDE)
+   Download: https://code.visualstudio.com/
+
+========================================
+ PHASE 2: PROJECT SETUP
+========================================
+Step 1: Extract the ZIP
+  - Download shopflow.zip
+  - Right-click → Extract All
+  - Extract to: C:\Projects\shopflow
+  - You will see: pom.xml, src/, frontend/, Dockerfile, etc.
+
+Step 2: Open in VS Code
+  - Open VS Code
+  - File → Open Folder → Select C:\Projects\shopflow
+
+Step 3: Verify project structure
+  shopflow/
+  ├── src/main/java/com/shopflow/
+  │   ├── ShopFlowApplication.java
+  │   ├── entity/          (Product.java, Order.java)
+  │   ├── repository/      (ProductRepository, OrderRepository)
+  │   ├── service/         (ProductService, OrderService)
+  │   ├── controller/      (ProductController, OrderController, HomeController)
+  │   └── config/          (CorsConfig, DataSeeder)
+  ├── src/test/java/com/shopflow/
+  │   └── ShopFlowTests.java   (6 JUnit tests)
+  ├── frontend/
+  │   └── index.html           (beautiful dark UI)
+  ├── k8s/
+  │   └── deployment.yaml
+  ├── Dockerfile
+  ├── docker-compose.yml
+  ├── Jenkinsfile
+  └── pom.xml
+
+========================================
+ PHASE 3: BUILD THE PROJECT (Maven)
+========================================
+Open Command Prompt in the project folder:
+
+  cd C:\Projects\shopflow
+
+Run Maven build:
+
+  mvn clean package -DskipTests
+
+Expected output:
+  BUILD SUCCESS
+  target/shopflow.jar created
+
+To also run tests:
+
+  mvn test
+
+Expected test output:
+  Tests run: 6, Failures: 0, Errors: 0
+  BUILD SUCCESS
+
+========================================
+ PHASE 4: GIT + GITHUB
+========================================
+Step 1: Initialize Git
+  git init
+  git add .
+  git commit -m "Initial ShopFlow project"
+
+Step 2: Create GitHub repo
+  - Go to github.com
+  - Click New Repository
+  - Name: shopflow
+  - Keep Public, no README
+  - Click Create
+
+Step 3: Push to GitHub
+  git remote add origin https://github.com/YOUR_USERNAME/shopflow.git
+  git branch -M main
+  git push -u origin main
+
+========================================
+ PHASE 5: DOCKER + DOCKER COMPOSE
+========================================
+IMPORTANT: Always use docker compose up, NEVER docker run alone.
+
+Step 1: Build JAR first (if not done)
+  mvn clean package -DskipTests
+
+Step 2: Start everything (MySQL + App)
+  docker compose up --build
+
+What this does:
+  - Starts mysql container (shopflow-mysql)
+  - Waits for MySQL to be ready (healthcheck)
+  - Builds your Spring Boot Docker image
+  - Starts shopflow-app container
+  - Automatically creates MySQL database
+  - Seeds 6 products on first startup
+
+Step 3: Verify containers are running
+  docker ps
+
+You should see:
+  shopflow-mysql    running
+  shopflow-app      running
+
+Step 4: Check app logs
+  docker logs shopflow-app
+
+Look for: "Started ShopFlowApplication"
+
+Step 5: Open the app
+  Backend API: http://localhost:9090
+  API Health:  http://localhost:9090/health
+  Products:    http://localhost:9090/api/products
+
+Step 6: Open Frontend
+  Double-click: frontend/index.html in your browser
+  (or open file:///C:/Projects/shopflow/frontend/index.html)
+
+Step 7: Stop everything
+  docker compose down
+
+========================================
+ PHASE 6: JENKINS CI/CD PIPELINE
+========================================
+Step 1: Start Jenkins
+  docker run -d --name jenkins     -p 8080:8080 -p 50000:50000     -v jenkins_home:/var/jenkins_home     -v /var/run/docker.sock:/var/run/docker.sock     jenkins/jenkins:lts
+
+On Windows CMD (one line):
+  docker run -d --name jenkins -p 8080:8080 -p 50000:50000 -v jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkins/jenkins:lts
+
+Step 2: Give Jenkins Docker access
+  docker exec -u 0 -it jenkins bash
+  chmod 666 /var/run/docker.sock
+  exit
+  docker restart jenkins
+
+Step 3: Open Jenkins
+  http://localhost:8080
+
+Step 4: Get password
+  docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+
+Step 5: Setup Jenkins
+  - Paste password → Continue
+  - Install suggested plugins (wait 2-3 min)
+  - Create admin user → Save
+
+Step 6: Create Pipeline
+  - Dashboard → New Item
+  - Name: shopflow-pipeline
+  - Select: Pipeline → OK
+  - Scroll to Pipeline section
+  - Select: Pipeline script
+  - Paste contents of your Jenkinsfile
+  - Change GitHub URL to your repo
+  - Click Save
+
+Step 7: Run Pipeline
+  - Click Build Now
+  - Watch stages: Clone → Build → Test → Docker → Deploy
+  - All should turn GREEN
+
+========================================
+ PHASE 7: CLOUD DEPLOYMENT (Free Options)
+========================================
+
+OPTION A: RENDER (Easiest, Recommended)
+-----------------------------------------
+1. Go to render.com → Sign up with GitHub
+2. New → Web Service
+3. Connect your GitHub shopflow repo
+4. Fill settings:
+   - Build Command: mvn clean package -DskipTests
+   - Start Command: java -jar target/shopflow.jar
+   - Instance Type: Free
+5. Add Environment Group:
+   - SPRING_DATASOURCE_URL = jdbc:postgresql://...  (Render provides this)
+   - SPRING_DATASOURCE_USERNAME = (from Render)
+   - SPRING_DATASOURCE_PASSWORD = (from Render)
+6. Add a Free PostgreSQL database from Render Dashboard
+   (Note: You need to switch from MySQL to PostgreSQL for Render free tier)
+   OR use H2 in-memory database for demo
+7. Click Deploy → Your app will be live at:
+   https://shopflow.onrender.com
+
+OPTION B: RAILWAY (Easiest Docker Deploy)
+------------------------------------------
+1. Go to railway.app → Login with GitHub
+2. New Project → Deploy from GitHub Repo
+3. Select your shopflow repository
+4. Railway auto-detects Dockerfile → deploys
+5. Add MySQL: + New → Database → MySQL
+6. Copy DATABASE_URL from MySQL service
+7. Set environment variables in your service:
+   SPRING_DATASOURCE_URL = mysql://user:pass@host:port/railway
+8. Redeploy → App live at: https://shopflow.up.railway.app
+
+OPTION C: ORACLE CLOUD (Always Free VM)
+-----------------------------------------
+1. Sign up at cloud.oracle.com (free forever)
+2. Create Compute Instance:
+   - Shape: VM.Standard.A1.Flex (Ampere, Always Free)
+   - OS: Ubuntu 22.04
+   - Add your SSH public key
+3. Connect via SSH:
+   ssh ubuntu@YOUR_INSTANCE_IP
+4. Install Docker on the VM:
+   sudo apt update
+   sudo apt install docker.io docker-compose -y
+   sudo systemctl start docker
+   sudo usermod -aG docker ubuntu
+5. Install Maven:
+   sudo apt install maven -y
+6. Clone your GitHub repo:
+   git clone https://github.com/YOUR_USERNAME/shopflow.git
+   cd shopflow
+7. Build and run:
+   mvn clean package -DskipTests
+   docker compose up -d --build
+8. Open Firewall in Oracle Console:
+   - Networking → Virtual Cloud Networks → Security Lists
+   - Add Ingress Rule: Port 9090
+9. Access your app:
+   http://YOUR_VM_IP:9090
+
+OPTION D: FLY.IO (Docker, Global)
+------------------------------------
+1. Install flyctl:
+   powershell -Command "iwr https://fly.io/install.ps1 -useb | iex"
+2. Login:
+   flyctl auth login
+3. Initialize (from project folder):
+   flyctl launch
+   (Choose: app name = shopflow, region nearest to you)
+4. Create free Postgres:
+   flyctl postgres create --name shopflow-db
+   flyctl postgres attach --app shopflow shopflow-db
+5. Set env vars:
+   flyctl secrets set SPRING_DATASOURCE_PASSWORD=ShopFlow@123
+6. Deploy:
+   flyctl deploy
+7. App live at: https://shopflow.fly.dev
+
+========================================
+ TESTING YOUR APIs (Postman)
+========================================
+Download Postman from: postman.com
+
+API Endpoints (when running locally):
+
+GET  http://localhost:9090/health
+GET  http://localhost:9090/api/products
+POST http://localhost:9090/api/products
+  Body (JSON):
+  {
+    "name": "Gaming Chair",
+    "description": "Ergonomic gaming chair",
+    "price": 25999,
+    "stock": 5,
+    "category": "Accessories"
+  }
+
+GET  http://localhost:9090/api/orders
+POST http://localhost:9090/api/orders
+  Body (JSON):
+  {
+    "customerName": "Niharika",
+    "customerEmail": "niharika@email.com",
+    "address": "Bengaluru, Karnataka",
+    "productName": "MacBook Pro 14",
+    "quantity": 1,
+    "totalPrice": 199999
+  }
+
+PUT  http://localhost:9090/api/orders/1/status?status=SHIPPED
+DELETE http://localhost:9090/api/products/1
+
+========================================
+ QUICK REFERENCE COMMANDS
+========================================
+Start project:    docker compose up --build
+Stop project:     docker compose down
+View logs:        docker logs shopflow-app
+View containers:  docker ps
+Build JAR:        mvn clean package -DskipTests
+Run tests:        mvn test
+Push to GitHub:   git add . && git commit -m "update" && git push
+
+========================================
+ TROUBLESHOOTING
+========================================
+Problem: "mysql: Name or service not known"
+Fix: You ran "docker run" instead of "docker compose up"
+ALWAYS use: docker compose up --build
+
+Problem: Port 9090 already in use
+Fix: docker rm -f shopflow-app && docker compose up -d app
+
+Problem: Build fails (Java version)
+Fix: Make sure java -version shows 17.x
+
+Problem: Jenkins Docker permission denied
+Fix: docker exec -u 0 -it jenkins bash
+     chmod 666 /var/run/docker.sock && exit
+     docker restart jenkins
+
+Problem: Frontend shows "API not reachable"
+Fix: Make sure docker compose up is running
+     Check: docker ps (shopflow-app must be in list)
+
+============================================================

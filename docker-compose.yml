@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+
+  mysql:
+    image: mysql:8
+    container_name: shopflow-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ShopFlow@123
+      MYSQL_DATABASE: shopflow
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pShopFlow@123"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 40s
+
+  app:
+    build: .
+    container_name: shopflow-app
+    restart: on-failure
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "9090:9090"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/shopflow?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ShopFlow@123
+
+volumes:
+  mysql_data:

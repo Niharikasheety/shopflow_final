@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopFlow — DevOps E-Commerce</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#080c10; --bg2:#0d1117; --bg3:#131920; --border:rgba(255,255,255,0.07);
+  --accent:#00ff88; --accent2:#00d4ff; --accent3:#ff6b35;
+  --text:#e8edf2; --muted:#6b7685; --card:#0f1520; --radius:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:#2a3340;border-radius:10px}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:rgba(8,12,16,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.nav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--accent);letter-spacing:-0.5px;}
+.nav-logo span{color:var(--text);}
+.nav-tabs{display:flex;gap:4px;}
+.nav-tab{padding:8px 18px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;color:var(--muted);transition:all .2s;border:none;background:none;}
+.nav-tab:hover{color:var(--text);background:var(--bg3);}
+.nav-tab.active{color:var(--accent);background:rgba(0,255,136,0.1);}
+.cart-btn{display:flex;align-items:center;gap:8px;padding:8px 20px;border-radius:10px;background:var(--accent);color:#000;font-weight:700;font-size:14px;border:none;cursor:pointer;transition:all .2s;}
+.cart-btn:hover{background:#00e07a;transform:translateY(-1px);}
+.nav-badge{background:#000;color:var(--accent);font-size:11px;font-weight:800;padding:2px 7px;border-radius:20px;min-width:20px;text-align:center;}
+
+.page{display:none;padding-top:64px;min-height:100vh;}
+.page.active{display:block;}
+
+.hero{padding:80px 40px 60px;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(0,255,136,0.07) 0%,transparent 60%);text-align:center;border-bottom:1px solid var(--border);}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:20px;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.2);font-size:12px;font-weight:600;color:var(--accent);margin-bottom:24px;}
+.hero-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hero h1{font-family:'Syne',sans-serif;font-size:clamp(38px,5vw,66px);font-weight:800;line-height:1.1;letter-spacing:-2px;margin-bottom:16px;}
+.hero h1 span{color:var(--accent);}
+.hero p{color:var(--muted);font-size:17px;max-width:480px;margin:0 auto 32px;line-height:1.6;}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.btn{padding:12px 28px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{background:#00e07a;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,255,136,0.3);}
+.btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border);}
+.stat-item{background:var(--bg);padding:22px;text-align:center;}
+.stat-val{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;color:var(--accent);}
+.stat-lbl{font-size:12px;color:var(--muted);margin-top:4px;}
+
+.section{padding:40px;}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+.section-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;}
+.section-title em{font-style:normal;color:var(--accent);}
+
+.search-row{display:flex;gap:12px;margin-bottom:28px;}
+.search-input{flex:1;padding:12px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:15px;outline:none;transition:border .2s;}
+.search-input:focus{border-color:var(--accent);}
+.search-input::placeholder{color:var(--muted);}
+.cat-select{padding:12px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;outline:none;cursor:pointer;}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;}
+.pcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:all .3s;cursor:pointer;}
+.pcard:hover{border-color:rgba(0,255,136,0.35);transform:translateY(-5px);box-shadow:0 20px 50px rgba(0,0,0,0.5);}
+.pcard-img{width:100%;height:200px;object-fit:cover;display:block;background:var(--bg3);}
+.pcard-img-ph{width:100%;height:200px;background:linear-gradient(135deg,var(--bg3),var(--bg2));display:flex;align-items:center;justify-content:center;font-size:52px;}
+.pcard-body{padding:18px;}
+.pcard-cat{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+.pcard-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px;line-height:1.3;}
+.pcard-desc{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.pcard-row{display:flex;align-items:center;justify-content:space-between;}
+.pcard-price{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;}
+.sbadge{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:700;}
+.sbadge.in{background:rgba(0,255,136,0.1);color:var(--accent);border:1px solid rgba(0,255,136,0.2);}
+.sbadge.low{background:rgba(255,107,53,0.1);color:var(--accent3);border:1px solid rgba(255,107,53,0.2);}
+.sbadge.out{background:rgba(255,60,60,0.1);color:#ff3c3c;border:1px solid rgba(255,60,60,0.2);}
+.add-btn{width:100%;margin-top:12px;padding:10px;border-radius:10px;background:rgba(0,255,136,0.08);color:var(--accent);border:1px solid rgba(0,255,136,0.2);font-weight:600;font-size:14px;cursor:pointer;transition:all .2s;}
+.add-btn:hover{background:var(--accent);color:#000;}
+.add-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+.cart-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:150;backdrop-filter:blur(5px);}
+.cart-overlay.open{display:block;}
+.cart-panel{position:fixed;top:0;right:0;width:400px;height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:200;padding:24px;overflow-y:auto;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);}
+.cart-panel.open{transform:translateX(0);}
+.cart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.cart-head-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;}
+.cart-x{background:var(--bg3);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;}
+.cart-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);}
+.cart-item-info{flex:1;}
+.cart-item-name{font-weight:600;font-size:14px;margin-bottom:4px;}
+.cart-item-price{color:var(--accent);font-weight:800;font-family:'Syne',sans-serif;}
+.cart-qty{display:flex;align-items:center;gap:10px;margin-top:8px;}
+.qty-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;}
+.qty-n{font-weight:700;min-width:20px;text-align:center;}
+.rm-btn{color:var(--muted);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;}
+.rm-btn:hover{color:#ff3c3c;}
+.cart-empty{text-align:center;padding:60px 0;color:var(--muted);}
+.cart-total-row{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-top:1px solid var(--border);margin-top:8px;}
+.cart-total-lbl{color:var(--muted);}
+.cart-total-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--accent);}
+.checkout-btn{width:100%;padding:14px;border-radius:12px;background:var(--accent);color:#000;font-weight:700;font-size:16px;border:none;cursor:pointer;margin-top:16px;transition:all .2s;}
+.checkout-btn:hover{background:#00e07a;}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;backdrop-filter:blur(10px);align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:32px;width:90%;max-width:500px;max-height:90vh;overflow-y:auto;}
+.modal h2{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:6px;}
+.modal-sub{color:var(--muted);font-size:14px;margin-bottom:24px;}
+.modal-item{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);font-size:14px;}
+.modal-item-n{color:var(--muted);}
+.modal-total-row{display:flex;justify-content:space-between;align-items:center;padding:18px 0;margin-top:8px;}
+.modal-total-lbl{font-weight:700;font-size:16px;}
+.modal-total-v{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent);}
+.modal-btns{display:flex;gap:12px;margin-top:20px;}
+.modal-confirm{flex:1;padding:14px;border-radius:12px;background:var(--accent);color:#000;font-weight:700;font-size:15px;border:none;cursor:pointer;transition:all .2s;}
+.modal-confirm:hover{background:#00e07a;}
+.modal-cancel{padding:14px 20px;border-radius:12px;background:var(--bg3);color:var(--text);border:1px solid var(--border);font-weight:600;font-size:15px;cursor:pointer;}
+
+.fcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin-bottom:24px;}
+.fcard h3{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--accent);margin-bottom:20px;}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.fg{display:flex;flex-direction:column;gap:6px;}
+.fg.full{grid-column:1/-1;}
+.flabel{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+.finput{padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;outline:none;transition:border .2s;font-family:'DM Sans',sans-serif;}
+.finput:focus{border-color:var(--accent);}
+.finput::placeholder{color:var(--muted);}
+.fbtn{padding:12px 28px;border-radius:10px;background:var(--accent);color:#000;font-weight:700;font-size:14px;border:none;cursor:pointer;transition:all .2s;}
+.fbtn:hover{background:#00e07a;}
+.del-btn{background:rgba(255,60,60,0.1);color:#ff3c3c;border:1px solid rgba(255,60,60,0.2);padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+.del-btn:hover{background:#ff3c3c;color:#fff;}
+
+.tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:24px;}
+table{width:100%;border-collapse:collapse;}
+thead{background:var(--bg3);}
+th{padding:13px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+td{padding:14px 16px;border-top:1px solid var(--border);font-size:14px;vertical-align:middle;}
+tr:hover td{background:rgba(255,255,255,0.015);}
+.badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.b-pending{background:rgba(255,193,7,0.12);color:#ffc107;border:1px solid rgba(255,193,7,0.25);}
+.b-shipped{background:rgba(0,212,255,0.12);color:var(--accent2);border:1px solid rgba(0,212,255,0.25);}
+.b-delivered{background:rgba(0,255,136,0.12);color:var(--accent);border:1px solid rgba(0,255,136,0.25);}
+.b-cancelled{background:rgba(255,60,60,0.12);color:#ff3c3c;border:1px solid rgba(255,60,60,0.25);}
+
+.astats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+.astat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px;display:flex;align-items:center;gap:16px;}
+.astat-icon{width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.astat-val{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;line-height:1;}
+.astat-lbl{font-size:13px;color:var(--muted);margin-top:3px;}
+
+.toast{position:fixed;bottom:28px;right:28px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.ti{padding:13px 20px;border-radius:12px;font-size:14px;font-weight:500;min-width:260px;display:flex;align-items:center;gap:10px;animation:slideIn .3s ease;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.ti-s{background:#0d2d1e;border:1px solid rgba(0,255,136,0.3);color:var(--accent);}
+.ti-e{background:#2d0d0d;border:1px solid rgba(255,60,60,0.3);color:#ff6b6b;}
+.ti-i{background:#0d1a2d;border:1px solid rgba(0,212,255,0.3);color:var(--accent2);}
+
+.spin-wrap{text-align:center;padding:60px;color:var(--muted);}
+.spin{display:inline-block;width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:rot .7s linear infinite;}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* Pipeline page */
+.pipe-wrap{padding:40px;}
+.pipe-h{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;margin-bottom:8px;}
+.pipe-sub{color:var(--muted);margin-bottom:40px;font-size:16px;}
+.pipe-flow{display:flex;align-items:center;gap:0;overflow-x:auto;padding-bottom:16px;margin-bottom:40px;}
+.pstage{flex-shrink:0;text-align:center;}
+.pcircle{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 10px;background:rgba(0,255,136,0.1);border:2px solid var(--accent);}
+.pname{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;}
+.ptool{font-size:11px;color:var(--accent);margin-top:3px;}
+.parrow{font-size:22px;color:var(--muted);flex-shrink:0;padding:0 8px;margin-bottom:32px;}
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:32px;}
+.tcrd{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;}
+.tcrd-ph{font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.tcrd-n{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;}
+.tcrd-d{font-size:13px;color:var(--muted);line-height:1.5;}
+.cmd-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin-bottom:20px;}
+.cmd-card h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:16px;}
+pre{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:18px;font-size:13px;line-height:1.8;overflow-x:auto;color:#a8d8a8;margin-bottom:12px;}
+.c1{color:var(--muted);}
+.c2{color:var(--accent2);}
+.cloud-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+.ccrd{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;}
+.ccrd-n{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px;}
+.cfree{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;background:rgba(0,255,136,0.1);color:var(--accent);border:1px solid rgba(0,255,136,0.2);margin-bottom:10px;}
+.ccrd-d{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:12px;}
+.ccrd ol{font-size:13px;line-height:1.9;color:var(--text);padding-left:16px;}
+
+@media(max-width:768px){
+  nav{padding:0 16px;}.nav-tabs{display:none;}
+  .hero{padding:40px 20px;}.stats-bar{grid-template-columns:1fr 1fr;}
+  .section{padding:20px;}.grid{grid-template-columns:1fr;}
+  .fgrid{grid-template-columns:1fr;}.astats{grid-template-columns:1fr 1fr;}
+  .cart-panel{width:100%;}.pipe-wrap{padding:20px;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Shop<span>Flow</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('shop')">🛍 Shop</button>
+    <button class="nav-tab" onclick="showPage('orders')">📦 My Orders</button>
+    <button class="nav-tab" onclick="showPage('admin')">⚙️ Admin</button>
+    <button class="nav-tab" onclick="showPage('pipeline')">🔧 DevOps</button>
+  </div>
+  <button class="cart-btn" onclick="openCart()">🛒 Cart <span class="nav-badge" id="cartCount">0</span></button>
+</nav>
+
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-head">
+    <div class="cart-head-title">🛒 Your Cart</div>
+    <button class="cart-x" onclick="closeCart()">✕</button>
+  </div>
+  <div id="cartItems"><div class="cart-empty"><div style="font-size:48px;margin-bottom:12px">🛒</div><div>Your cart is empty</div></div></div>
+  <div id="cartSummary" style="display:none">
+    <div class="cart-total-row"><span class="cart-total-lbl">Total</span><span class="cart-total-val" id="cartTotal">₹0</span></div>
+    <button class="checkout-btn" onclick="openCheckout()">Proceed to Checkout →</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="checkoutModal">
+  <div class="modal">
+    <h2>Checkout</h2>
+    <div class="modal-sub">Complete your order details below</div>
+    <div class="fgrid" style="margin-bottom:20px">
+      <div class="fg"><label class="flabel">Full Name *</label><input class="finput" id="co_name" placeholder="Niharika"></div>
+      <div class="fg"><label class="flabel">Email *</label><input class="finput" id="co_email" placeholder="you@email.com"></div>
+      <div class="fg full"><label class="flabel">Delivery Address *</label><input class="finput" id="co_addr" placeholder="Street, City, State, PIN"></div>
+    </div>
+    <div id="coItems"></div>
+    <div class="modal-total-row"><span class="modal-total-lbl">Order Total</span><span class="modal-total-v" id="coTotal">₹0</span></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeCheckout()">Cancel</button>
+      <button class="modal-confirm" onclick="placeOrder()">Place Order 🎉</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- SHOP -->
+<div class="page active" id="page-shop">
+  <div class="hero">
+    <div class="hero-tag"><div class="hero-dot"></div>DevOps-Powered E-Commerce Platform</div>
+    <h1>Shop the <span>Future</span><br>of Tech</h1>
+    <p>Premium electronics with seamless checkout. Powered by Spring Boot, Docker &amp; Jenkins CI/CD.</p>
+    <div class="hero-btns">
+      <button class="btn btn-primary" onclick="document.getElementById('shopSection').scrollIntoView({behavior:'smooth'})">Browse Products</button>
+      <button class="btn btn-ghost" onclick="showPage('pipeline')">View DevOps Stack →</button>
+    </div>
+  </div>
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-val" id="s-products">—</div><div class="stat-lbl">Products</div></div>
+    <div class="stat-item"><div class="stat-val" id="s-orders">—</div><div class="stat-lbl">Orders Placed</div></div>
+    <div class="stat-item"><div class="stat-val" id="s-delivered">—</div><div class="stat-lbl">Delivered</div></div>
+    <div class="stat-item"><div class="stat-val" style="color:var(--accent2)">✓ UP</div><div class="stat-lbl">API Status</div></div>
+  </div>
+  <div class="section" id="shopSection">
+    <div class="section-head"><div class="section-title">All <em>Products</em></div></div>
+    <div class="search-row">
+      <input class="search-input" id="searchQ" placeholder="Search products..." oninput="searchP(this.value)">
+      <select class="cat-select" id="catSel" onchange="filterCat(this.value)">
+        <option value="">All Categories</option>
+        <option>Laptops</option><option>Phones</option><option>Audio</option>
+        <option>Monitors</option><option>Tablets</option><option>Accessories</option>
+      </select>
+    </div>
+    <div class="grid" id="productsGrid"><div class="spin-wrap"><div class="spin"></div></div></div>
+  </div>
+</div>
+
+<!-- ORDERS -->
+<div class="page" id="page-orders">
+  <div class="section">
+    <div class="section-head"><div class="section-title">Track <em>Orders</em></div></div>
+    <div class="fcard" style="max-width:420px">
+      <h3>🔍 Find Your Orders</h3>
+      <div style="display:flex;gap:10px">
+        <input class="finput" id="trackEmail" placeholder="Enter your email address">
+        <button class="fbtn" onclick="trackOrders()">Track</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Product</th><th>Qty</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody id="ordersBody"><tr><td colspan="6" style="text-align:center;padding:48px;color:var(--muted)">Enter your email above to find orders</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="page" id="page-admin">
+  <div class="section">
+    <div class="section-head"><div class="section-title">Admin <em>Dashboard</em></div></div>
+    <div class="astats">
+      <div class="astat"><div class="astat-icon" style="background:rgba(0,255,136,0.1)">📦</div><div><div class="astat-val" id="a-p">—</div><div class="astat-lbl">Products</div></div></div>
+      <div class="astat"><div class="astat-icon" style="background:rgba(0,212,255,0.1)">🧾</div><div><div class="astat-val" id="a-o">—</div><div class="astat-lbl">Total Orders</div></div></div>
+      <div class="astat"><div class="astat-icon" style="background:rgba(255,193,7,0.1)">⏳</div><div><div class="astat-val" id="a-pend">—</div><div class="astat-lbl">Pending</div></div></div>
+      <div class="astat"><div class="astat-icon" style="background:rgba(0,255,136,0.08)">✅</div><div><div class="astat-val" id="a-del">—</div><div class="astat-lbl">Delivered</div></div></div>
+    </div>
+
+    <div class="fcard">
+      <h3>➕ Add New Product</h3>
+      <div class="fgrid">
+        <div class="fg"><label class="flabel">Name *</label><input class="finput" id="p_n" placeholder="Product name"></div>
+        <div class="fg"><label class="flabel">Category</label><input class="finput" id="p_c" placeholder="e.g. Laptops"></div>
+        <div class="fg"><label class="flabel">Price (₹) *</label><input class="finput" type="number" id="p_p" placeholder="75000"></div>
+        <div class="fg"><label class="flabel">Stock</label><input class="finput" type="number" id="p_s" placeholder="10"></div>
+        <div class="fg full"><label class="flabel">Description</label><input class="finput" id="p_d" placeholder="Brief product description"></div>
+        <div class="fg full"><label class="flabel">Image URL (optional)</label><input class="finput" id="p_i" placeholder="https://images.unsplash.com/..."></div>
+      </div>
+      <button class="fbtn" style="margin-top:16px" onclick="adminAddProduct()">Add Product</button>
+    </div>
+
+    <div class="section-head">
+      <div class="section-title">Manage <em>Products</em></div>
+      <button class="btn btn-ghost" style="font-size:13px;padding:8px 18px" onclick="loadAdminP()">↺ Refresh</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Action</th></tr></thead>
+        <tbody id="aPBody"><tr><td colspan="6" style="text-align:center;padding:40px"><div class="spin"></div></td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="section-head">
+      <div class="section-title">Manage <em>Orders</em></div>
+      <button class="btn btn-ghost" style="font-size:13px;padding:8px 18px" onclick="loadAdminO()">↺ Refresh</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Customer</th><th>Product</th><th>Total</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="aOBody"><tr><td colspan="6" style="text-align:center;padding:40px"><div class="spin"></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PIPELINE -->
+<div class="page" id="page-pipeline">
+<div class="pipe-wrap">
+  <div class="pipe-h">DevOps Pipeline</div>
+  <div class="pipe-sub">Complete automated lifecycle — from code commit to live cloud deployment</div>
+
+  <div class="pipe-flow">
+    <div class="pstage"><div class="pcircle">📝</div><div class="pname">Plan</div><div class="ptool">Requirements</div></div>
+    <div class="parrow">→</div>
+    <div class="pstage"><div class="pcircle">💻</div><div class="pname">Code</div><div class="ptool">Spring Boot</div></div>
+    <div class="parrow">→</div>
+    <div class="pstage"><div class="pcircle">🔄</div><div class="pname">Version Control</div><div class="ptool">Git + GitHub</div></div>
+    <div class="parrow">→</div>
+    <div class="pstage"><div class="pcircle">🔨</div><div class="pname">Build</div><div class="ptool">Maven</div></div>
+    <div class="parrow">→</div>
+    <div class="pstage"><div class="pcircle">🧪</div><div class="pname">Test</div><div class="ptool">JUnit 5</div></div>
+    <div class="parrow">→</div>
+    <div class="pstage"><div class="pcircle">🐳</div><div class="pname">Containerize</div><div class="ptool">Docker</div></div>
+    <div class="parrow">→</div>
+    <div class="pstage"><div class="pcircle">⚙️</div><div class="pname">CI/CD</div><div class="ptool">Jenkins</div></div>
+    <div class="parrow">→</div>
+    <div class="pstage"><div class="pcircle">☁️</div><div class="pname">Deploy</div><div class="ptool">Cloud</div></div>
+  </div>
+
+  <div class="tools-grid">
+    <div class="tcrd"><div class="tcrd-ph">Phase 1 — Development</div><div class="tcrd-n">Spring Boot 3.3</div><div class="tcrd-d">Java 17 REST API. Auto-seeds 6 products. CORS enabled for frontend.</div></div>
+    <div class="tcrd"><div class="tcrd-ph">Phase 2 — Database</div><div class="tcrd-n">MySQL 8</div><div class="tcrd-d">Products and Orders tables auto-created by Hibernate on first run.</div></div>
+    <div class="tcrd"><div class="tcrd-ph">Phase 3 — Version Control</div><div class="tcrd-n">Git + GitHub</div><div class="tcrd-d">Push code to GitHub. Jenkins polls for changes and triggers pipeline automatically.</div></div>
+    <div class="tcrd"><div class="tcrd-ph">Phase 4 — Build</div><div class="tcrd-n">Apache Maven</div><div class="tcrd-d">Compiles Java code, downloads dependencies, packages as shopflow.jar.</div></div>
+    <div class="tcrd"><div class="tcrd-ph">Phase 5 — Testing</div><div class="tcrd-n">JUnit 5</div><div class="tcrd-d">6 tests: price validation, stock check, discount calc, GST, order total.</div></div>
+    <div class="tcrd"><div class="tcrd-ph">Phase 6 — Containerize</div><div class="tcrd-n">Docker</div><div class="tcrd-d">App packaged as Docker image using eclipse-temurin:17. Reproducible anywhere.</div></div>
+    <div class="tcrd"><div class="tcrd-ph">Phase 7 — Orchestration</div><div class="tcrd-n">Docker Compose</div><div class="tcrd-d">mysql + app services. App waits for MySQL healthcheck before starting.</div></div>
+    <div class="tcrd"><div class="tcrd-ph">Phase 8 — CI/CD</div><div class="tcrd-n">Jenkins</div><div class="tcrd-d">Clone → Build → Test → Docker Build → Auto-deploy. No manual steps.</div></div>
+  </div>
+
+  <div class="cmd-card">
+    <h3>🚀 Run Locally — Complete Steps</h3>
+    <pre><span class="c1"># 1. Build the JAR (run from project root)</span>
+<span class="c2">mvn clean package -DskipTests</span>
+
+<span class="c1"># 2. Start MySQL + App together</span>
+<span class="c2">docker compose up --build</span>
+
+<span class="c1"># 3. Backend API is live at:</span>
+<span class="c1">#    http://localhost:9090</span>
+
+<span class="c1"># 4. Open frontend (no server needed)</span>
+<span class="c1">#    Double-click frontend/index.html in your browser</span>
+
+<span class="c1"># 5. Stop everything</span>
+<span class="c2">docker compose down</span></pre>
+  </div>
+
+  <div class="cmd-card">
+    <h3>⚙️ Jenkins CI/CD Setup</h3>
+    <pre><span class="c1"># Start Jenkins container (run once)</span>
+<span class="c2">docker run -d --name jenkins -p 8080:8080 -p 50000:50000 \
+  -v jenkins_home:/var/jenkins_home \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  jenkins/jenkins:lts</span>
+
+<span class="c1"># Give Jenkins permission to use Docker</span>
+<span class="c2">docker exec -u 0 -it jenkins bash</span>
+<span class="c2">chmod 666 /var/run/docker.sock && exit</span>
+<span class="c2">docker restart jenkins</span>
+
+<span class="c1"># Open Jenkins UI: http://localhost:8080</span>
+<span class="c1"># Get password:</span>
+<span class="c2">docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword</span>
+
+<span class="c1"># In Jenkins: New Item → Pipeline → paste Jenkinsfile → Build Now</span></pre>
+  </div>
+
+  <div class="cmd-card">
+    <h3>🐙 Push to GitHub</h3>
+    <pre><span class="c2">git init</span>
+<span class="c2">git add .</span>
+<span class="c2">git commit -m "Initial ShopFlow project"</span>
+<span class="c2">git remote add origin https://github.com/YOUR_USERNAME/shopflow.git</span>
+<span class="c2">git branch -M main</span>
+<span class="c2">git push -u origin main</span></pre>
+  </div>
+
+  <div class="pipe-h" style="font-size:20px;margin-bottom:16px">☁️ Free Cloud Deployment</div>
+  <div class="cloud-grid">
+    <div class="ccrd">
+      <div class="ccrd-n">🟢 Render</div>
+      <div class="cfree">⭐ Recommended — Free</div>
+      <div class="ccrd-d">Easiest free cloud for Spring Boot. Auto-deploys on every GitHub push.</div>
+      <ol>
+        <li>Go to <strong>render.com</strong> → Sign up free</li>
+        <li>New → Web Service → Connect GitHub repo</li>
+        <li>Build Command: <code>mvn package -DskipTests</code></li>
+        <li>Start Command: <code>java -jar target/shopflow.jar</code></li>
+        <li>Add a free PostgreSQL database</li>
+        <li>Set env vars (DB URL, user, pass)</li>
+        <li>Click Deploy → Live in 5 min ✅</li>
+      </ol>
+    </div>
+    <div class="ccrd">
+      <div class="ccrd-n">🔵 Railway</div>
+      <div class="cfree">$5 Free Credits</div>
+      <div class="ccrd-d">One-click Docker deploy from GitHub. Has native MySQL support.</div>
+      <ol>
+        <li>Go to <strong>railway.app</strong> → Login with GitHub</li>
+        <li>New Project → Deploy from GitHub repo</li>
+        <li>Add MySQL Plugin from marketplace</li>
+        <li>Railway auto-detects Dockerfile</li>
+        <li>Set SPRING_DATASOURCE_URL from MySQL plugin</li>
+        <li>Deploy → Done ✅</li>
+      </ol>
+    </div>
+    <div class="ccrd">
+      <div class="ccrd-n">🟠 Oracle Cloud</div>
+      <div class="cfree">Always Free Forever</div>
+      <div class="ccrd-d">Free VM with 1GB RAM. Best for running Docker + Jenkins 24/7.</div>
+      <ol>
+        <li>Sign up at <strong>cloud.oracle.com</strong></li>
+        <li>Create Always Free Ubuntu VM (Ampere A1)</li>
+        <li>SSH into VM: <code>ssh ubuntu@YOUR_IP</code></li>
+        <li>Install Docker: <code>sudo apt install docker.io docker-compose -y</code></li>
+        <li>Clone your GitHub repo on the VM</li>
+        <li><code>mvn package -DskipTests &amp;&amp; docker compose up -d</code></li>
+        <li>Open port 9090 in Oracle firewall → Live ✅</li>
+      </ol>
+    </div>
+    <div class="ccrd">
+      <div class="ccrd-n">🟣 Fly.io</div>
+      <div class="cfree">Free Hobby Tier</div>
+      <div class="ccrd-d">Deploy Docker containers globally. Free for small apps with Postgres.</div>
+      <ol>
+        <li>Install: <code>curl -L https://fly.io/install.sh | sh</code></li>
+        <li><code>flyctl auth login</code></li>
+        <li><code>flyctl launch</code> (auto-detects Dockerfile)</li>
+        <li><code>flyctl postgres create</code></li>
+        <li><code>flyctl postgres attach --app shopflow</code></li>
+        <li><code>flyctl deploy</code> → Live globally ✅</li>
+      </ol>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const API = 'http://localhost:9090/api';
+let cart = JSON.parse(localStorage.getItem('sf-cart')||'[]');
+let allP = [];
+
+function showPage(n) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  const idx = ['shop','orders','admin','pipeline'].indexOf(n);
+  if(idx>=0) document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+  if(n==='shop') loadProducts();
+  if(n==='admin') { loadAdminStats(); loadAdminP(); loadAdminO(); }
+  window.scrollTo(0,0);
+}
+
+function toast(msg,type='s') {
+  const el=document.getElementById('toast');
+  const d=document.createElement('div');
+  d.className=`ti ti-${type}`;
+  d.innerHTML=(type==='s'?'✅':type==='e'?'❌':'ℹ️')+' '+msg;
+  el.appendChild(d);
+  setTimeout(()=>d.remove(),3500);
+}
+
+async function apiFetch(path,method='GET',body=null) {
+  try {
+    const o={method,headers:{'Content-Type':'application/json'}};
+    if(body) o.body=JSON.stringify(body);
+    const r=await fetch(API+path,o);
+    if(!r.ok) throw new Error(r.statusText);
+    const ct=r.headers.get('content-type')||'';
+    return ct.includes('application/json') ? r.json() : r.text();
+  } catch(e) {
+    toast('Cannot reach API — start backend: docker compose up --build','e');
+    throw e;
+  }
+}
+
+const catEmoji = c => ({Laptops:'💻',Phones:'📱',Audio:'🎧',Monitors:'🖥️',Tablets:'📟',Accessories:'🖱️'}[c]||'📦');
+
+async function loadProducts() {
+  try {
+    allP = await apiFetch('/products');
+    renderP(allP);
+    document.getElementById('s-products').textContent = allP.length;
+    try {
+      const s=await apiFetch('/orders/stats');
+      document.getElementById('s-orders').textContent=s.total;
+      document.getElementById('s-delivered').textContent=s.delivered;
+    } catch(e) {}
+  } catch(e) {
+    document.getElementById('productsGrid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">⚠️ Backend not reachable.<br><br>Run: <strong style="color:var(--accent)">mvn clean package -DskipTests</strong> then <strong style="color:var(--accent)">docker compose up --build</strong></div>';
+  }
+}
+
+function renderP(products) {
+  const g=document.getElementById('productsGrid');
+  if(!products.length){g.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">No products found</div>';return;}
+  g.innerHTML=products.map(p=>{
+    const inCart=cart.find(c=>c.id===p.id);
+    const sc=p.stock>10?'in':p.stock>0?'low':'out';
+    const sl=p.stock>10?'In Stock':p.stock>0?`Only ${p.stock} left`:'Out of Stock';
+    const img=p.imageUrl?`<img class="pcard-img" src="${p.imageUrl}" alt="${p.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`:'';
+    const ph=`<div class="pcard-img-ph" ${p.imageUrl?'style="display:none"':''}>${catEmoji(p.category)}</div>`;
+    return `<div class="pcard">
+      ${img}${ph}
+      <div class="pcard-body">
+        <div class="pcard-cat">${p.category||'General'}</div>
+        <div class="pcard-name">${p.name}</div>
+        <div class="pcard-desc">${p.description||'Premium quality product'}</div>
+        <div class="pcard-row">
+          <div class="pcard-price">₹${p.price.toLocaleString('en-IN')}</div>
+          <span class="sbadge ${sc}">${sl}</span>
+        </div>
+        <button class="add-btn" id="btn-${p.id}" onclick="addToCart(${p.id})" ${p.stock===0?'disabled':''}>
+          ${inCart?'✓ Added to Cart':'+ Add to Cart'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function searchP(q) { renderP(!q.trim()?allP:allP.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())||(p.description||'').toLowerCase().includes(q.toLowerCase()))); }
+function filterCat(c) { renderP(c?allP.filter(p=>p.category===c):allP); }
+
+function saveCart() { localStorage.setItem('sf-cart',JSON.stringify(cart)); }
+function updateBadge() { document.getElementById('cartCount').textContent=cart.reduce((s,c)=>s+c.qty,0); }
+
+function addToCart(id) {
+  const p=allP.find(x=>x.id===id); if(!p) return;
+  const ex=cart.find(c=>c.id===id);
+  if(ex) ex.qty=Math.min(ex.qty+1,p.stock);
+  else cart.push({...p,qty:1});
+  saveCart(); updateBadge(); renderCart();
+  const b=document.getElementById('btn-'+id);
+  if(b) b.textContent='✓ Added to Cart';
+  toast(`${p.name} added to cart`);
+}
+
+function renderCart() {
+  const el=document.getElementById('cartItems'), sm=document.getElementById('cartSummary');
+  if(!cart.length){el.innerHTML='<div class="cart-empty"><div style="font-size:48px;margin-bottom:12px">🛒</div><div>Your cart is empty</div></div>';sm.style.display='none';return;}
+  const total=cart.reduce((s,c)=>s+c.price*c.qty,0);
+  el.innerHTML=cart.map(c=>`
+    <div class="cart-item">
+      <div style="font-size:30px;flex-shrink:0">${catEmoji(c.category)}</div>
+      <div class="cart-item-info">
+        <div class="cart-item-name">${c.name}</div>
+        <div class="cart-item-price">₹${(c.price*c.qty).toLocaleString('en-IN')}</div>
+        <div class="cart-qty">
+          <button class="qty-btn" onclick="chQty(${c.id},-1)">−</button>
+          <span class="qty-n">${c.qty}</span>
+          <button class="qty-btn" onclick="chQty(${c.id},1)">+</button>
+        </div>
+      </div>
+      <button class="rm-btn" onclick="rmCart(${c.id})">🗑</button>
+    </div>`).join('');
+  document.getElementById('cartTotal').textContent='₹'+total.toLocaleString('en-IN');
+  sm.style.display='block';
+}
+
+function chQty(id,d){const i=cart.find(c=>c.id===id);if(!i)return;i.qty=Math.max(1,i.qty+d);saveCart();updateBadge();renderCart();}
+function rmCart(id){cart=cart.filter(c=>c.id!==id);saveCart();updateBadge();renderCart();renderP(allP);}
+function openCart(){document.getElementById('cartPanel').classList.add('open');document.getElementById('cartOverlay').classList.add('open');renderCart();}
+function closeCart(){document.getElementById('cartPanel').classList.remove('open');document.getElementById('cartOverlay').classList.remove('open');}
+
+function openCheckout() {
+  if(!cart.length)return;
+  closeCart();
+  const total=cart.reduce((s,c)=>s+c.price*c.qty,0);
+  document.getElementById('coItems').innerHTML=cart.map(c=>`<div class="modal-item"><span class="modal-item-n">${c.name} × ${c.qty}</span><span style="font-weight:700">₹${(c.price*c.qty).toLocaleString('en-IN')}</span></div>`).join('');
+  document.getElementById('coTotal').textContent='₹'+total.toLocaleString('en-IN');
+  document.getElementById('checkoutModal').classList.add('open');
+}
+function closeCheckout(){document.getElementById('checkoutModal').classList.remove('open');}
+
+async function placeOrder() {
+  const name=document.getElementById('co_name').value.trim();
+  const email=document.getElementById('co_email').value.trim();
+  const addr=document.getElementById('co_addr').value.trim();
+  if(!name||!email||!addr){toast('Please fill all fields','e');return;}
+  try {
+    for(const item of cart) {
+      await apiFetch('/orders','POST',{customerName:name,customerEmail:email,address:addr,productName:item.name,quantity:item.qty,totalPrice:item.price*item.qty});
+    }
+    toast('🎉 Order placed! Check My Orders tab.');
+    cart=[];saveCart();updateBadge();closeCheckout();
+    ['co_name','co_email','co_addr'].forEach(id=>document.getElementById(id).value='');
+    renderP(allP);
+  }catch(e){}
+}
+
+async function trackOrders() {
+  const email=document.getElementById('trackEmail').value.trim();
+  if(!email){toast('Enter your email','e');return;}
+  try {
+    const all=await apiFetch('/orders');
+    const mine=all.filter(o=>o.customerEmail.toLowerCase()===email.toLowerCase());
+    document.getElementById('ordersBody').innerHTML=mine.length?mine.map(o=>`<tr>
+      <td>#${o.id}</td><td>${o.productName}</td><td>${o.quantity}</td>
+      <td>₹${o.totalPrice.toLocaleString('en-IN')}</td>
+      <td><span class="badge b-${o.status.toLowerCase()}">${o.status}</span></td>
+      <td>${o.orderDate?new Date(o.orderDate).toLocaleDateString('en-IN'):'—'}</td>
+    </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">No orders found for this email</td></tr>';
+  }catch(e){}
+}
+
+async function loadAdminStats() {
+  try {
+    const [p,s]=await Promise.all([apiFetch('/products'),apiFetch('/orders/stats')]);
+    document.getElementById('a-p').textContent=p.length;
+    document.getElementById('a-o').textContent=s.total;
+    document.getElementById('a-pend').textContent=s.pending;
+    document.getElementById('a-del').textContent=s.delivered;
+  }catch(e){}
+}
+
+async function loadAdminP() {
+  try {
+    const p=await apiFetch('/products');
+    document.getElementById('aPBody').innerHTML=p.length?p.map(x=>`<tr>
+      <td>#${x.id}</td><td>${x.name}</td><td>${x.category||'—'}</td>
+      <td>₹${x.price.toLocaleString('en-IN')}</td><td>${x.stock}</td>
+      <td><button class="del-btn" onclick="delProduct(${x.id})">Delete</button></td>
+    </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">No products</td></tr>';
+  }catch(e){}
+}
+
+async function loadAdminO() {
+  try {
+    const o=await apiFetch('/orders');
+    document.getElementById('aOBody').innerHTML=o.length?o.map(x=>`<tr>
+      <td>#${x.id}</td>
+      <td>${x.customerName}<br><small style="color:var(--muted)">${x.customerEmail}</small></td>
+      <td>${x.productName}</td>
+      <td>₹${x.totalPrice.toLocaleString('en-IN')}</td>
+      <td><span class="badge b-${x.status.toLowerCase()}">${x.status}</span></td>
+      <td style="display:flex;gap:8px;align-items:center">
+        <select style="padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none" onchange="updStatus(${x.id},this.value)">
+          ${['PENDING','SHIPPED','DELIVERED','CANCELLED'].map(s=>`<option${x.status===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+        <button class="del-btn" onclick="delOrder(${x.id})">Del</button>
+      </td>
+    </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">No orders yet</td></tr>';
+  }catch(e){}
+}
+
+async function adminAddProduct() {
+  const name=document.getElementById('p_n').value.trim(), price=parseFloat(document.getElementById('p_p').value);
+  if(!name||!price||price<=0){toast('Name and valid price required','e');return;}
+  try {
+    await apiFetch('/products','POST',{name,price,category:document.getElementById('p_c').value,stock:parseInt(document.getElementById('p_s').value)||0,description:document.getElementById('p_d').value,imageUrl:document.getElementById('p_i').value,active:true});
+    toast('Product added!');
+    ['p_n','p_c','p_p','p_s','p_d','p_i'].forEach(id=>document.getElementById(id).value='');
+    loadAdminP();loadAdminStats();
+  }catch(e){}
+}
+
+async function delProduct(id){if(!confirm('Delete this product?'))return;try{await apiFetch('/products/'+id,'DELETE');toast('Product deleted');loadAdminP();loadAdminStats();}catch(e){}}
+async function updStatus(id,s){try{await apiFetch(`/orders/${id}/status?status=${s}`,'PUT');toast(`Order #${id} → ${s}`);loadAdminO();loadAdminStats();}catch(e){}}
+async function delOrder(id){if(!confirm('Delete this order?'))return;try{await apiFetch('/orders/'+id,'DELETE');toast('Order deleted');loadAdminO();loadAdminStats();}catch(e){}}
+
+updateBadge();renderCart();loadProducts();
+</script>
+</body>
+</html>
