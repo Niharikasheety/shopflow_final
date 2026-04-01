@@ -40,30 +40,51 @@ pipeline {
         stage("Deploy") {
             steps {
                 echo "Deploying with MySQL..."
+
                 sh """
+                    echo "Creating Docker network..."
                     docker network create shopflow-net 2>/dev/null || true
+
+                    echo "Starting MySQL container..."
                     docker rm -f mysql-db 2>/dev/null || true
                     docker run -d --name mysql-db --network shopflow-net \
                         -e MYSQL_ROOT_PASSWORD=ShopFlow@123 \
                         -e MYSQL_DATABASE=shopflow \
                         mysql:8
-                    echo "Waiting 30s for MySQL to be ready..."
-                    sleep 30
+
+                    echo "Waiting for MySQL to be ready..."
+                    until docker exec mysql-db mysqladmin ping -h "localhost" --silent; do
+                        sleep 5
+                    done
+
+                    echo "Stopping old app container (if exists)..."
                     docker rm -f ${CONTAINER} 2>/dev/null || true
-                    docker run -d -p ${PORT}:${PORT} \
+
+                    echo "Starting ShopFlow app container..."
+                    docker run -d --restart=always -p ${PORT}:${PORT} \
                         --name ${CONTAINER} \
                         --network shopflow-net \
                         -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/shopflow?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC \
                         -e SPRING_DATASOURCE_USERNAME=root \
                         -e SPRING_DATASOURCE_PASSWORD=ShopFlow@123 \
                         ${IMG_NAME}
+
+                    echo "Running containers:"
+                    docker ps
+
+                    echo "Application logs:"
+                    docker logs ${CONTAINER}
                 """
             }
         }
     }
 
     post {
-        success { echo "SUCCESS: App running at http://localhost:9090" }
-        failure { echo "FAILED: Check console output above" }
+        success {
+            echo "✅ SUCCESS: App running at http://localhost:9090"
+        }
+        failure {
+            echo "❌ FAILED: Check logs above carefully"
+        }
     }
 }
