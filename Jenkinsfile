@@ -12,21 +12,21 @@ pipeline {
         stage("Clone") {
             steps {
                 echo "Cloning from GitHub..."
-                git branch: "main", url: "https://github.com/Niharikasheety/shopflow.git"
+                git branch: "main", url: "https://github.com/Niharikasheety/shopflow_final.git"
             }
         }
 
         stage("Build") {
             steps {
                 echo "Building with Maven..."
-                sh "chmod +x mvnw && ./mvnw clean package -DskipTests"
+                sh "mvn clean package -DskipTests"
             }
         }
 
         stage("Test") {
             steps {
                 echo "Running JUnit tests..."
-                sh "./mvnw test"
+                sh "mvn test"
             }
         }
 
@@ -39,16 +39,19 @@ pipeline {
 
         stage("Deploy") {
             steps {
-                echo "Deploying container..."
+                echo "Deploying with MySQL..."
                 sh """
-                    docker rm -f ${CONTAINER} || true
                     docker network create shopflow-net 2>/dev/null || true
+                    docker rm -f mysql-db 2>/dev/null || true
                     docker run -d --name mysql-db --network shopflow-net \
                         -e MYSQL_ROOT_PASSWORD=ShopFlow@123 \
-                        -e MYSQL_DATABASE=shopflow mysql:8 2>/dev/null || true
-                    sleep 20
+                        -e MYSQL_DATABASE=shopflow \
+                        mysql:8
+                    echo "Waiting 30s for MySQL to be ready..."
+                    sleep 30
                     docker rm -f ${CONTAINER} 2>/dev/null || true
-                    docker run -d -p ${PORT}:${PORT} --name ${CONTAINER} \
+                    docker run -d -p ${PORT}:${PORT} \
+                        --name ${CONTAINER} \
                         --network shopflow-net \
                         -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/shopflow?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC \
                         -e SPRING_DATASOURCE_USERNAME=root \
