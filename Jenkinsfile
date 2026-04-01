@@ -41,7 +41,7 @@ pipeline {
             steps {
                 echo "Deploying with MySQL..."
 
-                sh """
+                sh '''
                     echo "Creating Docker network..."
                     docker network create shopflow-net 2>/dev/null || true
 
@@ -57,14 +57,14 @@ pipeline {
                         sleep 5
                     done
 
-                    echo "Stopping old app container (if exists)..."
+                    echo "Stopping old app container..."
                     docker rm -f ${CONTAINER} 2>/dev/null || true
 
-                    echo "Starting ShopFlow app container..."
+                    echo "Starting ShopFlow app..."
                     docker run -d --restart=always -p ${PORT}:${PORT} \
                         --name ${CONTAINER} \
                         --network shopflow-net \
-                        -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/shopflow?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC \
+                        -e SPRING_DATASOURCE_URL="jdbc:mysql://mysql-db:3306/shopflow?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" \
                         -e SPRING_DATASOURCE_USERNAME=root \
                         -e SPRING_DATASOURCE_PASSWORD=ShopFlow@123 \
                         ${IMG_NAME}
@@ -72,9 +72,9 @@ pipeline {
                     echo "Running containers:"
                     docker ps
 
-                    echo "Application logs:"
+                    echo "App logs:"
                     docker logs ${CONTAINER}
-                """
+                '''
             }
         }
     }
